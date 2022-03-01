@@ -1,17 +1,24 @@
 cmake_minimum_required(VERSION 3.10)
-project(sst-oscillators-mit  VERSION 0.5 LANGUAGES C CXX)
+project(sst-oscillators-mit VERSION 0.5 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+
+include(cmake/CPM.cmake)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
-if(MSVC)
+if (MSVC)
     target_compile_definitions(${PROJECT_NAME}
-        INTERFACE
+            INTERFACE
             _USE_MATH_DEFINES=1 # So that we can have M_PI on MSVC
-    )
-endif()
+            )
+endif ()
+
+
+add_library(${PROJECT_NAME}-testclients INTERFACE)
+target_include_directories(${PROJECT_NAME}-testclients INTERFACE include-testclients)
+target_link_libraries(${PROJECT_NAME}-testclients INTERFACE ${PROJECT_NAME})
 
 get_directory_property(parent_dir PARENT_DIRECTORY)
 if ("${parent_dir}" STREQUAL "")
@@ -26,6 +33,6 @@ if (SST_OSCILLATORS_MIT_BUILD_TESTS)
 endif ()
 
 option(SST_OSCILLATORS_MIT_BUILD_EXAMPLES "Add targets for building and running sst-filters examples" OFF)
-if(SST_OSCILLATORS_MIT_BUILD_EXAMPLES)
+if (SST_OSCILLATORS_MIT_BUILD_EXAMPLES)
     add_subdirectory(examples)
-endif()
+endif ()
