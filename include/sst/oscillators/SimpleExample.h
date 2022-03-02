@@ -49,20 +49,34 @@ struct SimpleExample
         return UNKNOWN;
     }
 
-    void getParamRange(uint32_t which, ftype &fmin, ftype &fmax, ftype &fdef)
+    bool getParamRange(uint32_t which, ftype &fmin, ftype &fmax, ftype &fdef)
     {
-        fmin = 0;
-        fmax = 1;
-        fdef = 0.5;
+        if (which == 0)
+        {
+            fmin = 0;
+            fmax = 1;
+            fdef = 0.5;
+            return true;
+        }
+
+        return false;
     }
 
-    void getDiscreteValues(uint32_t which, std::vector<std::string> &values, int &def)
+    bool getDiscreteValues(uint32_t which, std::vector<std::string> &values, int &def)
     {
         values.clear();
-        values.push_back("pulse");
-        values.push_back("sine");
-        values.push_back("saw");
-        def = 0;
+
+        if (which == 1)
+        {
+            values.clear();
+            values.push_back("pulse");
+            values.push_back("sine");
+            values.push_back("saw");
+            def = 0;
+            return true;
+        }
+
+        return false;
     }
 
     std::string getParamName(uint32_t which)
@@ -86,7 +100,7 @@ struct SimpleExample
 
     template <bool FM>
     void process(float pitch, ftype *outputL, ftype *outputR, ParamData<ftype> *pdata,
-                 ftype *fmData)
+                 ftype fmDepth, ftype *fmData)
     {
         auto shp = pdata[1].i;
         auto skew = pdata[0].f;

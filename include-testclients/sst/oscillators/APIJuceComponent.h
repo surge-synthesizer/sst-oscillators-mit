@@ -230,7 +230,7 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         size_t p = 0;
         while (p < samples)
         {
-            osc->template process<false>(n, dL, dR, data, nullptr);
+            osc->template process<false>(n, dL, dR, data, 0., nullptr);
             memcpy(&(ps->L[p]), dL, osc_t::blocksize * sizeof(float));
             memcpy(&(ps->R[p]), dR, osc_t::blocksize * sizeof(float));
             p += osc_t::blocksize;
@@ -266,7 +266,7 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         size_t p = 0;
         while (p < samples)
         {
-            osc->template process<false>(pitch, dL, dR, data, nullptr);
+            osc->template process<false>(pitch, dL, dR, data, 0., nullptr);
             pitch += dPitch;
             if (p >= samples / 2 && dPitch > 0)
                 dPitch = -dPitch;
@@ -331,7 +331,7 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
                 auto o = 0;
                 while (o < size)
                 {
-                    osc->template process<false>(tf(p), dL, dR, data, nullptr);
+                    osc->template process<false>(tf(p), dL, dR, data, 0., nullptr);
                     memcpy(&(fidata[a][o]), dL, osc_t::blocksize * sizeof(float));
                     o += osc_t::blocksize;
                 }
@@ -483,7 +483,7 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         std::vector<std::pair<float, float>> ell;
         while (p < w.getWidth() - 3 + w.getX())
         {
-            osc->template process<false>(60, dL, dR, data, nullptr);
+            osc->template process<false>(60, dL, dR, data, 0, nullptr);
             for (int i = 0; i < 32; ++i)
             {
                 auto y = ((1.0 - dL[i])) * 0.5;
