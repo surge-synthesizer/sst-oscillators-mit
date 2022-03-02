@@ -34,7 +34,7 @@ template <typename T> struct APITester
             if (opt == sst::oscillators_mit::FLOAT)
             {
                 float min, max, def;
-                osc->getParamRange(i, min, max, def);
+                REQUIRE(osc->getParamRange(i, min, max, def));
                 REQUIRE(min < max);
                 REQUIRE(def >= min);
                 REQUIRE(def <= max);
@@ -44,7 +44,7 @@ template <typename T> struct APITester
             {
                 std::vector<std::string> values;
                 int defv;
-                osc->getDiscreteValues(i, values, defv);
+                REQUIRE(osc->getDiscreteValues(i, values, defv));
                 REQUIRE(!values.empty());
                 REQUIRE(defv >= 0);
                 REQUIRE(defv < values.size());
@@ -60,7 +60,7 @@ template <typename T> struct APITester
         INFO("Is Stereo" << isS);
 
         float dL[32], dR[32];
-        osc->template process<false>(60, dL, dR, data, nullptr);
+        osc->template process<false>(60, dL, dR, data, 0.f, nullptr);
     }
     std::unique_ptr<T> osc;
     std::unique_ptr<sst::oscillators_mit::DummyPitchProvider> tuning;
