@@ -8,7 +8,7 @@
 
 TEST_CASE("Magic Circle")
 {
-    SECTION("Some Sines")
+    SECTION("Magic Circle")
     {
         auto ms = sst::oscillators_mit::MagicCircle<>();
         ms.init(480.0, 1.f / 48000);

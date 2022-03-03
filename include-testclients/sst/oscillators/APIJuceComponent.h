@@ -158,6 +158,34 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
             }
         }
 
+        useFM = std::make_unique<juce::ToggleButton>("Use FM");
+        useFM->setToggleState(false, juce::dontSendNotification);
+        useFM->onStateChange = [this]() {
+            fftValid = false;
+            repaint();
+        };
+        addAndMakeVisible(*useFM);
+
+        fmDepth = std::make_unique<juce::Slider>("depth");
+        fmDepth->setRange(-48, 25);
+        fmDepth->setValue(-48, juce::dontSendNotification);
+        fmDepth->setSliderStyle(juce::Slider::SliderStyle::LinearHorizontal);
+        fmDepth->onValueChange = [this]() {
+            fftValid = false;
+            repaint();
+        };
+        addAndMakeVisible(*fmDepth);
+        fmCM = std::make_unique<juce::Slider>("CM");
+        fmCM->setRange(0.25, 4);
+        fmCM->setValue(1.0, juce::dontSendNotification);
+        fmCM->setSliderStyle(juce::Slider::SliderStyle::LinearHorizontal);
+        fmCM->onValueChange = [this]() {
+            fftValid = false;
+            repaint();
+        };
+
+        addAndMakeVisible(*fmCM);
+
         setSize(1000, 700);
 
         idleTimer = std::make_unique<IdleTimer>(this);
@@ -475,16 +503,34 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         populatePData(osc, data);
         osc->init(60, data);
 
-        float dL[32], dR[32];
+        float dL[32], dR[32], fm[32];
         float p = w.getX() + 3;
         g.setColour(juce::Colours::white);
+
+        auto ufm = useFM->getToggleState();
 
         juce::Path pt;
         bool first{true};
         std::vector<std::pair<float, float>> ell;
+        float fmPhase = 0;
+        float fmDPhase = osc->tuning->pitch_to_dphase(60, 1.0 / sampleRate) * fmCM->getValue();
+        float fmDR = fmDepth->getValue();
+        float fmD = pow(10.0, fmDR / 20.0);
         while (p < w.getWidth() - 3 + w.getX())
         {
-            osc->template process<false>(60, dL, dR, data, 0, nullptr);
+            if (ufm)
+            {
+                for (int i = 0; i < 32; ++i)
+                {
+                    fm[i] = std::sin(fmPhase * 2.0 * M_PI);
+                    fmPhase += fmDPhase;
+                    if (fmPhase > 1.0)
+                        fmPhase -= 1.0;
+                }
+                osc->template process<true>(60, dL, dR, data, fmD, fm);
+            }
+            else
+                osc->template process<false>(60, dL, dR, data, 0, nullptr);
             for (int i = 0; i < 32; ++i)
             {
                 auto y = ((1.0 - dL[i])) * 0.5;
@@ -538,6 +584,16 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
             r = r.translated(0, ctH * 1.2);
         }
 
+        r = getLocalBounds()
+                .withWidth(ctrlW)
+                .withTrimmedTop(getHeight() - ctH)
+                .translated(0, -2 * ctH);
+        useFM->setBounds(r.reduced(1));
+        r = r.translated(0, ctH);
+        fmDepth->setBounds(r.reduced(1));
+        r = r.translated(0, ctH);
+        fmCM->setBounds(r.reduced(1));
+
         auto specr = getLocalBounds().withTrimmedLeft(ctrlW).withTrimmedTop(wfH);
         spectrogramImage = std::make_unique<juce::Image>(juce::Image::RGB, specr.getWidth() * 2,
                                                          specr.getHeight() * 2, true);
@@ -561,6 +617,9 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
 
     std::vector<std::unique_ptr<juce::Component>> controls;
     std::vector<std::unique_ptr<juce::Label>> labels;
+
+    std::unique_ptr<juce::ToggleButton> useFM;
+    std::unique_ptr<juce::Slider> fmDepth, fmCM;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OSCComponent)
 };

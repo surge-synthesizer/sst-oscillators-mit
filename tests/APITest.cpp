@@ -6,6 +6,8 @@
 
 #include "catch2/catch2.hpp"
 #include "sst/oscillators/APITester.h"
+
+#include "sst/oscillators/APFPD.h"
 #include "sst/oscillators/SimpleExample.h"
 
 TEST_CASE("Dummy Procider")
@@ -17,9 +19,15 @@ TEST_CASE("Dummy Procider")
 TEST_CASE("API Compliance")
 {
     REQUIRE(true); // If it compiles this basically passes
-    SECTION("AllPass PD")
+    SECTION("Simple Example")
     {
         auto t = sst::oscillators_testclients::APITester<sst::oscillators_mit::SimpleExample<>>();
+        REQUIRE(true);
+    }
+
+    SECTION("APF PD")
+    {
+        auto t = sst::oscillators_testclients::APITester<sst::oscillators_mit::APFPD<>>();
         REQUIRE(true);
     }
 }
