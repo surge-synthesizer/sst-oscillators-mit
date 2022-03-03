@@ -54,7 +54,7 @@ template <typename T> struct APITester
             REQUIRE(!osc->getParamName(i).empty());
         }
 
-        REQUIRE(osc->init(data));
+        REQUIRE(osc->init(60, data));
 
         auto isS = osc->supportsStereo();
         INFO("Is Stereo" << isS);

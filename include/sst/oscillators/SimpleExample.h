@@ -6,6 +6,8 @@
 #define SST_OSCILLATORS_MIT_ALLPASSPD_H
 
 #include "API.h"
+#include "Helpers.h"
+
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -91,9 +93,12 @@ struct SimpleExample
         return "err";
     }
 
-    bool init(ParamData<ftype> *pdata)
+    MagicCircle<> ms;
+
+    bool init(float pitch, ParamData<ftype> *pdata)
     {
         phase = 0;
+        ms.init(tuning->note_to_pitch(pitch) * MIDI_0_FREQ, dsamplerate_inv);
         return true;
     }
     bool supportsStereo() { return false; }
@@ -102,6 +107,7 @@ struct SimpleExample
     void process(float pitch, ftype *outputL, ftype *outputR, ParamData<ftype> *pdata,
                  ftype fmDepth, ftype *fmData)
     {
+        ms.setFrequency(tuning->note_to_pitch(pitch) * MIDI_0_FREQ, dsamplerate_inv);
         auto shp = pdata[1].i;
         auto skew = pdata[0].f;
         auto dphase = tuning->pitch_to_dphase(pitch, dsamplerate_inv);
@@ -111,8 +117,9 @@ struct SimpleExample
                 outputL[i] = phase < skew ? -1 : 1;
             else if (shp == 1)
             {
-                auto sphase = pow(phase, 1.0 + 1.3 * (skew - 0.5));
-                outputL[i] = std::sin(2.0 * M_PI * sphase);
+                auto qty = ms.value();
+                ms.step();
+                outputL[i] = (1.0 - skew) * qty + skew * (qty * qty * qty);
             }
             else if (shp == 2)
             {

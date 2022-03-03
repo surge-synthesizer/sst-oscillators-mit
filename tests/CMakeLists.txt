@@ -1,10 +1,11 @@
 add_executable(sst-oscillators-mit-tests)
 target_include_directories(sst-oscillators-mit-tests PRIVATE .)
-target_link_libraries(sst-oscillators-mit-tests PRIVATE ${PROJECT_NAME}-testclients)
+target_link_libraries(sst-oscillators-mit-tests PRIVATE ${PROJECT_NAME}-testclients simde)
 target_sources(sst-oscillators-mit-tests
         PRIVATE
         tests.cpp
         APITest.cpp
+        HelpersTests.cpp
         )
 
 add_custom_command(TARGET sst-oscillators-mit-tests
