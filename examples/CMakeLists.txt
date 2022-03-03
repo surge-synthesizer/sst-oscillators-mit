@@ -32,4 +32,5 @@ target_link_libraries(noodler PUBLIC
         juce::juce_gui_basics
         juce::juce_dsp
         juce::juce_audio_devices
+        simde
         sst-oscillators-mit-testclients)

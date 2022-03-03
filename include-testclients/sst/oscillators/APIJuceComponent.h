@@ -217,7 +217,7 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         auto osc = std::make_unique<osc_t>(sampleRate, tuning.get());
         sst::oscillators_mit::ParamData<float> data[7];
         populatePData(osc, data);
-        osc->init(data);
+        osc->init(n, data);
 
         auto samples = (int)(sec * sampleRate);
         auto es = samples % osc_t::blocksize;
@@ -249,17 +249,18 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         auto osc = std::make_unique<osc_t>(sampleRate, tuning.get());
         sst::oscillators_mit::ParamData<float> data[7];
         populatePData(osc, data);
-        osc->init(data);
 
         auto samples = (int)(sec * sampleRate);
         auto es = samples % osc_t::blocksize;
         samples -= es;
 
-        auto ps = std::make_unique<PipeSample>(samples);
-
         auto blocks = 1.0 * samples / osc_t::blocksize / 2;
         auto dPitch = 100 / blocks;
         float pitch = 20;
+
+        osc->init(pitch, data);
+
+        auto ps = std::make_unique<PipeSample>(samples);
 
         float dL[32], dR[32];
 
@@ -312,7 +313,7 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         auto osc = std::make_unique<osc_t>(sampleRate, tuning.get());
         sst::oscillators_mit::ParamData<float> data[7];
         populatePData(osc, data);
-        osc->init(data);
+        osc->init(tf(0), data);
 
         static constexpr int order = 10, size = 1 << order;
         juce::dsp::FFT fft(order);
@@ -472,7 +473,7 @@ template <typename osc_t> class OSCComponent : public juce::Component, juce::Aud
         g.fillRect(w);
         sst::oscillators_mit::ParamData<float> data[7];
         populatePData(osc, data);
-        osc->init(data);
+        osc->init(60, data);
 
         float dL[32], dR[32];
         float p = w.getX() + 3;
