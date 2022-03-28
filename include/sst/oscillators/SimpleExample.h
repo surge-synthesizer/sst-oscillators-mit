@@ -2,8 +2,8 @@
 // Created by Paul Walker on 2/28/22.
 //
 
-#ifndef SST_OSCILLATORS_MIT_ALLPASSPD_H
-#define SST_OSCILLATORS_MIT_ALLPASSPD_H
+#ifndef SST_OSCILLATORS_MIT_SIMPLEEXAMPLE_H
+#define SST_OSCILLATORS_MIT_SIMPLEEXAMPLE_H
 
 #include "API.h"
 #include "Helpers.h"
@@ -39,13 +39,19 @@ struct SimpleExample
 
     uint32_t numParams() { return 2; }
 
+    enum ParamIndices
+    {
+        smp_skew,
+        smp_shape
+    };
+
     ParamType getParamType(uint32_t which)
     {
         switch (which)
         {
-        case 0:
+        case smp_skew:
             return FLOAT;
-        case 1:
+        case smp_shape:
             return DISCRETE;
         }
         return UNKNOWN;
@@ -53,7 +59,7 @@ struct SimpleExample
 
     bool getParamRange(uint32_t which, ftype &fmin, ftype &fmax, ftype &fdef)
     {
-        if (which == 0)
+        if (which == smp_skew)
         {
             fmin = 0;
             fmax = 1;
@@ -68,7 +74,7 @@ struct SimpleExample
     {
         values.clear();
 
-        if (which == 1)
+        if (which == smp_shape)
         {
             values.clear();
             values.push_back("pulse");
@@ -85,20 +91,26 @@ struct SimpleExample
     {
         switch (which)
         {
-        case 0:
+        case smp_skew:
             return "skew";
-        case 1:
+        case smp_shape:
             return "shape";
         }
         return "err";
     }
 
-    MagicCircle<> ms;
+    QuadratureSine<> ms;
+
+    InterpOverBlock<blocksize> dPhaseInterp, skewInterp;
 
     bool init(float pitch, ParamData<ftype> *pdata)
     {
         phase = 0;
         ms.init(tuning->note_to_pitch(pitch) * MIDI_0_FREQ, dsamplerate_inv);
+
+        auto dphase = tuning->pitch_to_dphase(pitch, dsamplerate_inv);
+        dPhaseInterp.init(dphase);
+        skewInterp.init(pdata[smp_skew].f);
         return true;
     }
     bool supportsStereo() { return false; }
@@ -107,30 +119,41 @@ struct SimpleExample
     void process(float pitch, ftype *outputL, ftype *outputR, ParamData<ftype> *pdata,
                  ftype fmDepth, ftype *fmData)
     {
-        ms.setFrequency(tuning->note_to_pitch(pitch) * MIDI_0_FREQ, dsamplerate_inv);
-        auto shp = pdata[1].i;
-        auto skew = pdata[0].f;
-        auto dphase = tuning->pitch_to_dphase(pitch, dsamplerate_inv);
-        for (int i = 0; i < blocksize; ++i)
+        auto shp = pdata[smp_shape].i;
+        auto skew = pdata[smp_skew].f;
+        skewInterp.target(skew);
+        if (shp == 1)
         {
-            if (shp == 0)
-                outputL[i] = phase < skew ? -1 : 1;
-            else if (shp == 1)
-            {
-                auto qty = ms.value();
-                ms.step();
-                outputL[i] = (1.0 - skew) * qty + skew * (qty * qty * qty);
-            }
-            else if (shp == 2)
-            {
-                auto sphase = pow(phase, 1.0 + 1.3 * (skew - 0.5));
-                outputL[i] = sphase * 2.0 - 1.0;
-            }
+            ms.setFrequency(tuning->note_to_pitch(pitch) * MIDI_0_FREQ, dsamplerate_inv);
 
-            outputR[i] = outputL[i];
-            phase += dphase;
-            if (phase > 1)
-                phase -= 1;
+            // Obviously not that efficient but exercised the block version still
+            for (int i = 0; i < blocksize; ++i)
+            {
+                auto skl = skewInterp.at(i);
+                auto qty = ms.step();
+                outputL[i] = (1.0 - skl) * qty + skl * (qty * qty * qty);
+                outputR[i] = outputL[i];
+            }
+        }
+        else
+        {
+            auto dphase = tuning->pitch_to_dphase(pitch, dsamplerate_inv);
+            dPhaseInterp.target(dphase);
+            for (int i = 0; i < blocksize; ++i)
+            {
+                if (shp == 0)
+                    outputL[i] = phase < skewInterp.at(i) ? -1 : 1;
+                else if (shp == 2)
+                {
+                    auto sphase = pow(phase, 1.0 + 1.3 * (skewInterp.at(i) - 0.5));
+                    outputL[i] = sphase * 2.0 - 1.0;
+                }
+
+                outputR[i] = outputL[i];
+                phase += dPhaseInterp.at(i);
+                if (phase > 1)
+                    phase -= 1;
+            }
         }
     }
     float phase{0};
